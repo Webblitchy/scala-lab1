@@ -30,4 +30,24 @@ class BotTenderTokenizerInputSuite extends AnyPropSpec with TableDrivenPropertyC
     property("inputting 'santé !'") {
         evaluateInput("santé !") should equal(true)
     }
+    property("Distance choucroute chourave should equal 4 ") {
+        spellCheckerSvc.stringDistance("choucroute", "chourave") should equal(4)
+    }
+    property("Distance Joris Eliott should equal 6" ) {
+        spellCheckerSvc.stringDistance("Joris", "Eliott") should equal(6)
+    }
+    property("Distance Eliott Eliot should equal 1" ) {
+        spellCheckerSvc.stringDistance("Eliott", "Eliot") should equal(1)
+    }
+    property("Distance Animaux animals should equal 3") {
+        spellCheckerSvc.stringDistance("Animaux", "animals") should equal(3)
+    }
+
+    property("inputting 'salut'") {
+        spellCheckerSvc.getClosestWordInDictionary("bières") should equal("biere")
+    }
+    property("veux->vouloir"){
+        spellCheckerSvc.getClosestWordInDictionary("veux") should equal("vouloir")
+    }
+    
 }

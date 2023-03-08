@@ -9,8 +9,12 @@ object ClinksCalculator:
     * @param n the number to compute
     * @return n!
     */
-  // TODO - Part 1 Step 1
-  def factorial(n: Int): BigInt = ???
+  // DONE - Part 1 Step 1
+  def factorial(n: Int): Int = 
+    def loop(acc: Int, n: Int): Int =
+        if n==0 then acc
+        else loop(acc*n,n-1)
+    loop(1, n)
 
   /**
     * Calculate the combination of two given numbers
@@ -18,6 +22,6 @@ object ClinksCalculator:
     * @param k the second number
     * @return n choose k
     */
-  // TODO - Part 1 Step 1
-  def calculateCombination(n: Int, k: Int): Int = ???
+  // DONE - Part 1 Step 1
+  def calculateCombination(n: Int, k: Int): Int = factorial(n)/(factorial(k) * factorial(n-k))
 end ClinksCalculator
