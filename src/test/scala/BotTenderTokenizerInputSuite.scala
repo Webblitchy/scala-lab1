@@ -6,6 +6,7 @@ import prop.*
 import java.io.ByteArrayOutputStream
 import Utils.{Dictionary, SpellCheckerService, SpellCheckerImpl}
 import Chat.TokenizerService
+import Chat.Token
 
 class BotTenderTokenizerInputSuite extends AnyPropSpec with TableDrivenPropertyChecks with should.Matchers {
     val spellCheckerSvc: SpellCheckerService = new SpellCheckerImpl(Dictionary.dictionary)
@@ -49,5 +50,10 @@ class BotTenderTokenizerInputSuite extends AnyPropSpec with TableDrivenPropertyC
     property("veux->vouloir"){
         spellCheckerSvc.getClosestWordInDictionary("veux") should equal("vouloir")
     }
-    
+    property(" input to output"){
+        val tokenizer = tokenizerSvc.tokenize("salut je veux une bière")
+        val currentToken: (String, Token) = tokenizer.nextToken()
+        currentToken._1 should equal("bonjour")
+        currentToken._2 should equal(Token.BONJOUR)
+    }
 }

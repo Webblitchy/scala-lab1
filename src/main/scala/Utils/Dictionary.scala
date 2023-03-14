@@ -8,6 +8,7 @@ object Dictionary:
   // This dictionary is a Map object that contains valid words as keys and their normalized equivalents as values (e.g.
   // we want to normalize the words "veux" and "aimerais" in one unique term: "vouloir").
   val dictionary: Map[String, String] = Map(
+    "salut" -> "bonjour",
     "bonjour" -> "bonjour",
     "hello" -> "bonjour",
     "yo" -> "bonjour",
