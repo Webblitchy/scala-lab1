@@ -2,7 +2,7 @@ package Chat
 
 enum Token:
   case // Terms
-       // TODO - Part 2 Step 1
+       // DONE - Part 2 Step 1
 
        // Interjections
        BONJOUR, 
