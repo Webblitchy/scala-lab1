@@ -35,14 +35,64 @@ class Parser(tokenized: Tokenized):
   def parsePhrases() : ExprTree =
     if curToken == BONJOUR then readToken()
     if curToken == JE then
-      readToken()
+      readToken() // ignore the "je"
+      if curToken == ETRE then
+        readToken()
+        if curToken == ASSOIFFE then
+          readToken()
+          Thirsty
+        else if curToken == AFFAME then
+          readToken()
+          Hungry
+        else if curToken == PSEUDO then
+          readToken()
+          Login(curValue)
+        else expected(ASSOIFFE, AFFAME, PSEUDO)
+      else if curToken == VOULOIR then
+        if curToken == COMMANDER then
+          readToken()
+          Buy(parseCommand)
+        else if curToken == CONNAITRE then
+          readToken()
+          eat(MON)
+          eat(SOLDE)
+          AskSold
+        else expected(COMMANDER, CONNAITRE)
+      else if curToken == ME then
+        readToken()
+        eat(APPELER)
+        Login(curValue)
+      else expected(ETRE, VOULOIR, ME)
+    else if curToken == COMBIEN then
+      eat(COUTER)
+      AskPrice(parseCommand)
+    else if curToken == QUEL then
       eat(ETRE)
-      if curToken == ASSOIFFE then
-        readToken()
-        Thirsty
-      else if curToken == AFFAME then
-        readToken()
-        Hungry
-      else expected(ASSOIFFE, AFFAME)
-    else expected(BONJOUR, JE)
-  def parseCommand() : ExprTree = ???
+      eat(LE)
+      eat(PRIX)
+      eat(DE)
+      AskPrice(parseCommand)
+    else expected(BONJOUR, JE, COMBIEN, QUEL) // pourquoi BONJOUR
+  def parseCommand : ExprTree = ???
+    // if curToken == NUM then
+    //   val num = curValue.toInt
+    //   readToken()
+    //   if curToken == PRODUIT then
+    //     val product = curValue
+    //     readToken()
+    //     if curToken == MARQUE then
+    //       val brand = curValue
+    //       readToken()
+    //       Command(num, product, Some(brand))
+    //     else Command(num, product, None)
+    //   else expected(PRODUIT)
+    // else expected(NUM)
+
+    // if curToken == ET then
+    //   readToken()
+    //   parseCommand
+    // else if curToken == OU then
+    //   readToken()
+    //   parseCommand
+    
+  // type Command = (Int, String, Option[String])

@@ -16,12 +16,12 @@ object ExprTree:
   case object Thirsty extends ExprTree
   case object Hungry extends ExprTree
   case object AskSold extends ExprTree
-  case object AskPrice extends ExprTree
+  case class AskPrice(command: ExprTree) extends ExprTree
   //a sentence to command some product 
-  case object Buy extends ExprTree
+  case class Buy(command: ExprTree) extends ExprTree
   case class Login(user: String) extends ExprTree
-  case object Or extends ExprTree
-  case object And extends ExprTree
+  // case object Or extends ExprTree
+  // case object And extends ExprTree
   // a sentence describing some command : NUM, PRODUCT (MARQUE) [ (ET | OU ) Product]
-  case class Command(num:Int,product:String, brand : Option[String]) extends ExprTree
+  // case class Command(num:Int,product:String, brand : Option[String]) extends ExprTree
 

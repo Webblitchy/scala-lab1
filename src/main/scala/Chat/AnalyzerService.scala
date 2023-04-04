@@ -11,7 +11,9 @@ class AnalyzerService(productSvc: ProductService,
     * @return the result of the computation
     */
   // TODO - Part 2 Step 3
-  def computePrice(t: ExprTree): Double = ???
+  def computePrice(t: ExprTree): Double =
+    // TODO
+    0.0 
 
   /**
     * Return the output text of the current node, in order to write it in console.
@@ -22,7 +24,18 @@ class AnalyzerService(productSvc: ProductService,
     val inner: ExprTree => String = reply(session)
     t match
       // TODO - Part 2 Step 3
-      // Example cases
       case Thirsty => "Eh bien, la chance est de votre côté, car nous offrons les meilleures bières de la région !"
       case Hungry => "Pas de soucis, nous pouvons notamment vous offrir des croissants faits maisons !"
+      case AskSold => 
+        session.getCurrentUser match
+          case Some(user) =>
+            "Vous avez N CHF sur votre compte." // TODO
+          case None => 
+            "Je ne sais pas qui vous êtes !"
+        
+      case AskPrice(command: ExprTree) => ""
+      case Buy(command: ExprTree) => ""
+      case Login(user) => 
+        session.setCurrentUser(user)
+        "Bonjour " + user + " !"
 end AnalyzerService
