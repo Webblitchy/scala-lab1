@@ -45,13 +45,14 @@ class TokenizerService(spellCheckerSvc: SpellCheckerService):
       case "wittekop" => Token.MARQUE
       case "punkipa" => Token.MARQUE
       case "jackhammer" => Token.MARQUE
+      case "tenebreuse" => Token.MARQUE
       case "solde" => Token.SOLDE
       case "prix" => Token.PRIX
       case w if w.matches("[0-9]+") => Token.NUM
       //if the word starts with _ it is a pseudo
       case w if w.startsWith("_") => Token.PSEUDO
       case _ => Token.UNKNOWN
-      )
+    )
 
   def sanitize(input: String): String = 
     input.toLowerCase

@@ -42,11 +42,11 @@ class AccountImpl extends AccountService:
   def isAccountExisting(user: String): Boolean = 
     map.contains(user)
   def purchase(user: String, amount: Double): Double = 
-    isAccountExisting(user) match
-      case true => {
-        val new_ammount = getAccountBalance(user)-amount;
-        map.put(user,  new_ammount);
-        new_ammount
-      }
-      case false => 0.0
+    if isAccountExisting(user) && getAccountBalance(user) >= amount then
+      val new_amount = getAccountBalance(user)-amount;
+      map.put(user,  new_amount);
+      new_amount
+    else
+      0.0
+    
 end AccountImpl

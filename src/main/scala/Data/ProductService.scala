@@ -8,7 +8,21 @@ trait ProductService:
   def getDefaultBrand(product: ProductName): BrandName
 
 class ProductImpl extends ProductService:
-  // TODO - Part 2 Step 2
-  def getPrice(product: ProductName, brand: String): Double = ???
-  def getDefaultBrand(product: ProductName): BrandName = ???
+  // DONE - Part 2 Step 2
+  def getPrice(product: ProductName, brand: String): Double = 
+    product match
+      case "croissant" =>  2.0
+      case "biere" => brand match
+        case "boxer" | "farmer" => 1.0
+        case "wittekop" => 2.0
+        case "punkipa" | "jackhammer" => 3.0
+        case "tenebreuse" => 4.0
+
+      
+    
+  def getDefaultBrand(product: ProductName): BrandName = 
+    product match
+      case "croissant" => "maison"
+      case "biere" => "boxer"
+    
 end ProductImpl
