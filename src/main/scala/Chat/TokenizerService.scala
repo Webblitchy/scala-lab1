@@ -6,23 +6,24 @@ import Utils.SpellCheckerService
 class TokenizerService(spellCheckerSvc: SpellCheckerService):
   def word2tuple(w:String) : (String,Token) = 
     val normalized_word = spellCheckerSvc.getClosestWordInDictionary(w)
-    normalized_word match
-      case "bonjour" => (normalized_word,Token.BONJOUR)
-      case "je" => (normalized_word,Token.JE)
-      case "etre" => (normalized_word,Token.ETRE)
-      case "vouloir" => (normalized_word,Token.VOULOIR)
-      case "assoiffe" => (normalized_word,Token.ASSOIFFE)
-      case "affame" =>  (normalized_word,Token.AFFAME)
-      case "biere" =>  (normalized_word,Token.PRODUIT)
-      case "croissant" =>  (normalized_word,Token.PRODUIT)
-      case "et" => (normalized_word,Token.ET)
-      case "ou" => (normalized_word,Token.OU)
-      case "svp" => (normalized_word,Token.SVP)
-      case w if w.matches("[0-9]+") => (normalized_word,Token.NUM)
+    //returns the tuple (normalized_word, token)
+    (normalized_word, normalized_word match
+      case "bonjour" => Token.BONJOUR
+      case "je" => Token.JE
+      case "etre" => Token.ETRE
+      case "vouloir" => Token.VOULOIR
+      case "assoiffe" => Token.ASSOIFFE
+      case "affame" =>  Token.AFFAME
+      case "biere" => Token.PRODUIT
+      case "croissant" =>  Token.PRODUIT
+      case "et" => Token.ET
+      case "ou" => Token.OU
+      case "svp" => Token.SVP
+      case w if w.matches("[0-9]+") => Token.NUM
       //if the word starts with _ it is a pseudo
-      case w if w.startsWith("_") => (normalized_word,Token.PSEUDO)
-      case _ => (normalized_word,Token.UNKNOWN)
-
+      case w if w.startsWith("_") => Token.PSEUDO
+      case _ => Token.UNKNOWN
+      )
     
   def sanitize(input: String): String = 
     input.toLowerCase
