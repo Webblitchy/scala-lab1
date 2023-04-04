@@ -45,3 +45,4 @@ class Parser(tokenized: Tokenized):
         Hungry
       else expected(ASSOIFFE, AFFAME)
     else expected(BONJOUR, JE)
+  def parseCommand() : ExprTree = ???

@@ -64,6 +64,7 @@ object Dictionary:
     "wittekop"  -> "wittekop",
     "punkipa"  -> "punkipa",
     "jackhammer" -> "jackhammer",
+    "ténébreuse" -> "tenebreuse",
     "solde" -> "solde",
     "prix" -> "prix",
     // DONE - Part 2 Step 1
