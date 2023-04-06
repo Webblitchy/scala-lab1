@@ -12,8 +12,17 @@ class AnalyzerService(productSvc: ProductService,
     */
   // TODO - Part 2 Step 3
   def computePrice(t: ExprTree): Double =
-    // TODO
-    0.0 
+    t match
+      case Command(num, product, brand) => 
+        val brandName = brand.getOrElse(productSvc.getDefaultBrand(product));
+        val price = productSvc.getPrice(product, brandName)
+        num * price
+      case And(left, right) => 
+        computePrice(left) * computePrice(right)
+      case Or(left, right) => 
+        computePrice(left) min computePrice(right) // return the minimum
+      case _ =>
+        0.0
 
   /**
     * Return the output text of the current node, in order to write it in console.
@@ -29,13 +38,32 @@ class AnalyzerService(productSvc: ProductService,
       case AskSold => 
         session.getCurrentUser match
           case Some(user) =>
-            "Vous avez N CHF sur votre compte." // TODO
+            if !accountSvc.isAccountExisting(user) then
+              "Vous n'avez pas de compte !"
+            else
+              val solde = accountSvc.getAccountBalance(user)
+              "Vous avez "+ solde +" CHF sur votre compte."
           case None => 
             "Je ne sais pas qui vous êtes !"
         
-      case AskPrice(command: ExprTree) => ""
-      case Buy(command: ExprTree) => ""
+      case AskPrice(command) => "Le prix de votre commande est de "+ computePrice(command) +" CHF."
+      case Buy(command) => 
+        session.getCurrentUser match
+          case Some(user) =>
+            if !accountSvc.isAccountExisting(user) then
+              "Vous n'avez pas de compte !"
+            else
+              val price = computePrice(command)
+              if accountSvc.getAccountBalance(user) < price then
+                "Vous n'avez pas assez d'argent sur votre compte !"
+              else
+                accountSvc.purchase(user, price)
+                "Voilà votre commande !"
+          case None => 
+            "Je ne sais pas qui vous êtes !"
       case Login(user) => 
         session.setCurrentUser(user)
         "Bonjour " + user + " !"
+        // TODO : création du compte ?
+      case _ => "Je ne comprends pas votre demande."
 end AnalyzerService

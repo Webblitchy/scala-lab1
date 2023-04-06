@@ -37,6 +37,7 @@ object Dictionary:
 
     // Actions
     "suis" -> "etre",
+    "est" -> "etre",
     "veux" -> "vouloir",
     "aimerais" -> "vouloir",
     "souhaite" -> "vouloir",

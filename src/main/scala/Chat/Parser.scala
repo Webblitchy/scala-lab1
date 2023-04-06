@@ -49,6 +49,7 @@ class Parser(tokenized: Tokenized):
           Login(curValue)
         else expected(ASSOIFFE, AFFAME, PSEUDO)
       else if curToken == VOULOIR then
+        readToken()
         if curToken == COMMANDER then
           readToken()
           Buy(parseCommand)
@@ -64,35 +65,41 @@ class Parser(tokenized: Tokenized):
         Login(curValue)
       else expected(ETRE, VOULOIR, ME)
     else if curToken == COMBIEN then
+      readToken()
       eat(COUTER)
       AskPrice(parseCommand)
     else if curToken == QUEL then
+      readToken()
       eat(ETRE)
       eat(LE)
       eat(PRIX)
       eat(DE)
       AskPrice(parseCommand)
-    else expected(BONJOUR, JE, COMBIEN, QUEL) // pourquoi BONJOUR
-  def parseCommand : ExprTree = ???
-    // if curToken == NUM then
-    //   val num = curValue.toInt
-    //   readToken()
-    //   if curToken == PRODUIT then
-    //     val product = curValue
-    //     readToken()
-    //     if curToken == MARQUE then
-    //       val brand = curValue
-    //       readToken()
-    //       Command(num, product, Some(brand))
-    //     else Command(num, product, None)
-    //   else expected(PRODUIT)
-    // else expected(NUM)
+    else expected(JE, COMBIEN, QUEL) // pourquoi BONJOUR
 
-    // if curToken == ET then
-    //   readToken()
-    //   parseCommand
-    // else if curToken == OU then
-    //   readToken()
-    //   parseCommand
+  def parseCommand : ExprTree =
+    var command : ExprTree = null
+    if curToken == NUM then
+      val num = curValue.toInt
+      readToken()
+      if curToken == PRODUIT then
+        val product = curValue
+        readToken()
+        command = Command(num, product, None)
+        if curToken == MARQUE then
+          val brand = curValue
+          readToken()
+          command = Command(num, product, Some(brand))
+      else expected(PRODUIT)
+    else expected(NUM)
+
+    if curToken == ET then
+      readToken()
+      And(command, parseCommand)
+    else if curToken == OU then
+      readToken()
+      Or(command, parseCommand)
+    else 
+      command
     
   // type Command = (Int, String, Option[String])
