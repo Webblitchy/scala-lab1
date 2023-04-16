@@ -23,7 +23,14 @@ class AnalyzerService(productSvc: ProductService,
         computePrice(left) min computePrice(right) // return the minimum
       case _ =>
         0.0
-
+  def stringify(expt : ExprTree):String = 
+    expt match
+      case Command(1, product, brand) => s"1 $product ${brand.getOrElse("")}"
+      case Command(n, product, brand) => s"$n ${product}s ${brand.getOrElse("")}"
+      case And(left, right) => s"${stringify(left)} et ${stringify(right)}"
+      case Or(left, right) => 
+        if computePrice(left) > computePrice(right) then s"${stringify(right)}" else s"${stringify(left)}"
+      case _ =>  expt.toString()
   /**
     * Return the output text of the current node, in order to write it in console.
     * @return the output text of the current node
@@ -59,7 +66,7 @@ class AnalyzerService(productSvc: ProductService,
               else
                 val nouveauSolde = accountSvc.purchase(user, price)
                 // TODO : améliorer l'affichage de la commande
-                "Voilà donc " + command + " ! Cela coûte " + price + ". Il vous reste " + nouveauSolde + " CHF sur votre compte."
+                "Voilà donc " + stringify(command) + " ! Cela coûte " + price + ". Il vous reste " + nouveauSolde + " CHF sur votre compte."
           case None => 
             "Je ne sais pas qui vous êtes ! Veuillez d'abord vous identifier."
       case Login(user) => 
