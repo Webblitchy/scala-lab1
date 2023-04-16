@@ -18,7 +18,7 @@ class AnalyzerService(productSvc: ProductService,
         val price = productSvc.getPrice(product, brandName)
         num * price
       case And(left, right) => 
-        computePrice(left) * computePrice(right)
+        computePrice(left) + computePrice(right)
       case Or(left, right) => 
         computePrice(left) min computePrice(right) // return the minimum
       case _ =>
