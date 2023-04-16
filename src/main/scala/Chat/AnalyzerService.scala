@@ -10,7 +10,7 @@ class AnalyzerService(productSvc: ProductService,
     * For example if we had a "+" node, we would add the values of its two children, then return the result.
     * @return the result of the computation
     */
-  // TODO - Part 2 Step 3
+  // DONE - Part 2 Step 3
   def computePrice(t: ExprTree): Double =
     t match
       case Command(num, product, brand) => 
@@ -44,7 +44,7 @@ class AnalyzerService(productSvc: ProductService,
               val solde = accountSvc.getAccountBalance(user)
               "Vous avez "+ solde +" CHF sur votre compte."
           case None => 
-            "Je ne sais pas qui vous êtes !"
+            "Je ne sais pas qui vous êtes ! Veuillez d'abord vous identifier."
         
       case AskPrice(command) => "Le prix de votre commande est de "+ computePrice(command) +" CHF."
       case Buy(command) => 
@@ -57,13 +57,16 @@ class AnalyzerService(productSvc: ProductService,
               if accountSvc.getAccountBalance(user) < price then
                 "Vous n'avez pas assez d'argent sur votre compte !"
               else
-                accountSvc.purchase(user, price)
-                "Voilà votre commande !"
+                val nouveauSolde = accountSvc.purchase(user, price)
+                // TODO : améliorer l'affichage de la commande
+                "Voilà donc " + command + " ! Cela coûte " + price + ". Il vous reste " + nouveauSolde + " CHF sur votre compte."
           case None => 
-            "Je ne sais pas qui vous êtes !"
+            "Je ne sais pas qui vous êtes ! Veuillez d'abord vous identifier."
       case Login(user) => 
+
         session.setCurrentUser(user)
+        if !accountSvc.isAccountExisting(user) then
+          accountSvc.addAccount(user, 30.0) // new account start with 30 CHF
         "Bonjour " + user + " !"
-        // TODO : création du compte ?
       case _ => "Je ne comprends pas votre demande."
 end AnalyzerService

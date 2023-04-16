@@ -31,7 +31,7 @@ class Parser(tokenized: Tokenized):
     throw new UnexpectedTokenException(s"Expected: $expectedTokens, found: $curToken")
 
   /** the root method of the parser: parses an entry phrase */
-  // TODO - Part 2 Step 4
+  // DONE - Part 2 Step 4
   def parsePhrases() : ExprTree =
     if curToken == BONJOUR then readToken()
     if curToken == JE then
@@ -45,8 +45,8 @@ class Parser(tokenized: Tokenized):
           readToken()
           Hungry
         else if curToken == PSEUDO then
-          readToken()
-          Login(curValue)
+          val pseudo = eat(PSEUDO).tail // remove the begining _
+          Login(pseudo)
         else expected(ASSOIFFE, AFFAME, PSEUDO)
       else if curToken == VOULOIR then
         readToken()
@@ -101,5 +101,3 @@ class Parser(tokenized: Tokenized):
       Or(command, parseCommand)
     else 
       command
-    
-  // type Command = (Int, String, Option[String])

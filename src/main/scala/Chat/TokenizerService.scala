@@ -30,6 +30,7 @@ class TokenizerService(spellCheckerSvc: SpellCheckerService):
       case "vouloir" => Token.VOULOIR
       case "couter" => Token.COUTER
       case "commander" => Token.COMMANDER
+      case "connaitre" => Token.CONNAITRE
       case "appeler" => Token.APPELER
 
       // Logic Operators

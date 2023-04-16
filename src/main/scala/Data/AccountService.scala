@@ -34,7 +34,7 @@ trait AccountService:
 
 class AccountImpl extends AccountService:
   // DONE - Part 2 Step 2
-  def map = mutable.Map[String, Double]()
+  val map = mutable.Map[String, Double]()
   def getAccountBalance(user: String): Double = 
     map.getOrElse(user, 0.0)
   def addAccount(user: String, balance: Double): Unit = 
