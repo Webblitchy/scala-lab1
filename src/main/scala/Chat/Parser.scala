@@ -78,7 +78,7 @@ class Parser(tokenized: Tokenized):
     else expected(JE, COMBIEN, QUEL) // pourquoi BONJOUR
 
   def parseCommand : ExprTree =
-    var command : ExprTree = null
+    var command : Command = null
     if curToken == NUM then
       val num = curValue.toInt
       readToken()

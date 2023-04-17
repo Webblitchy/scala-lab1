@@ -22,8 +22,8 @@ object ExprTree:
 
   case class Login(user: String) extends ExprTree
 
-  case class Or(left: ExprTree, right: ExprTree) extends ExprTree
-  case class And(left: ExprTree, right: ExprTree) extends ExprTree  
+  case class Or(left: Command, right: ExprTree) extends ExprTree
+  case class And(left: Command, right: ExprTree) extends ExprTree  
   // case object Or extends ExprTree
   // case object And extends ExprTree
   // a sentence describing some command : NUM, PRODUCT (MARQUE) [ (ET | OU ) Product]
