@@ -31,7 +31,6 @@ class Parser(tokenized: Tokenized):
     throw new UnexpectedTokenException(s"Expected: $expectedTokens, found: $curToken")
 
   /** the root method of the parser: parses an entry phrase */
-  // DONE - Part 2 Step 4
   def parsePhrases() : ExprTree =
     if curToken == BONJOUR then readToken()
     if curToken == JE then

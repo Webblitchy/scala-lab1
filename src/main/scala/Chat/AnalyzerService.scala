@@ -4,7 +4,6 @@ import Data.{AccountService, ProductService, Session}
 class AnalyzerService(productSvc: ProductService, accountSvc: AccountService):
   import ExprTree._
 
-
 // Compute on the left side of the tree
   def computePriceLeft(t: ExprTree): Double =
     t match

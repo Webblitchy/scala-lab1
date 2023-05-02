@@ -38,7 +38,8 @@ class AccountImpl extends AccountService:
   def getAccountBalance(user: String): Double = 
     map.getOrElse(user, 0.0)
   def addAccount(user: String, balance: Double): Unit = 
-    map.put(user, balance)
+    if !isAccountExisting(user) then 
+      map.put(user, balance)
   def isAccountExisting(user: String): Boolean = 
     map.contains(user)
   def purchase(user: String, amount: Double): Double = 
