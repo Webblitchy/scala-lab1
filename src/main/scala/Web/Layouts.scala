@@ -6,17 +6,22 @@ import scalatags.Text.tags2
 /** Assembles the method used to layout ScalaTags
   */
 object Layouts:
-
+  private def head_template =
+    head(
+      link(rel := "stylesheet", href := "static/css/main.css"),
+      script(src := "static/js/main.js")
+    )
+  private def navbar_template =
+    tags2.nav(
+      div("Bot-tender", `class` := "nav-brand"),
+      a("login", href := "/login", `class` := "nav-item")
+    )
   def index =
     doctype("html")(
       html(
-        link(rel := "stylesheet", href := "static/css/main.css"),
-        script(src := "static/js/main.js"),
+        head_template(),
         body(
-          tags2.nav(
-            div("Bot-tender", `class` := "nav-brand"),
-            a("login",href:="/login",`class` := "nav-item")
-          ),
+          navbar_template(),
           div(
             `class` := "content",
             div(
@@ -43,4 +48,49 @@ object Layouts:
         )
       )
     )
+  end index
+
+  def login =
+    doctype(
+      "html"
+    )(
+      html(
+        head_template(),
+        body(
+          tags2.nav(
+            div("Bot-tender", `class` := "nav-brand"),
+            a("Go to the message board", href := "/", `class` := "nav-item")
+          ),
+          div(
+            `class` := "content",
+            div(
+              id := "login_div",
+              h1(b("Login")),
+              form(
+                action := "/login",
+                method := "post",
+                id := "login_form",
+                label(`for` := "username_login", "Username: "),
+                input(id := "username_login", `type` := "text"),
+                input(`type` := "submit", value := "Login")
+              )
+            ),
+            div(
+              id := "register_div",
+              h1(b("Register")),
+              form(
+                action := "/register",
+                method := "post",
+                id := "register_form",
+                label(`for` := "username_register", "Username: "),
+                input(id := "username_register", `type` := "text"),
+                input(`type` := "submit", value := "Register")
+              )
+            )
+          )
+        )
+      )
+    )
+
+  end login
 end Layouts
