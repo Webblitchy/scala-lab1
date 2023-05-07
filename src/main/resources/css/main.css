@@ -71,3 +71,6 @@ form > input[type="text"] {
 .msg-content {
     grid-area: msg;
 }
+.msg-wait {
+    text-align: center;
+}

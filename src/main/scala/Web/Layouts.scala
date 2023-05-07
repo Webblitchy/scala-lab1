@@ -2,10 +2,26 @@ package Web
 
 import scalatags.Text.all._
 import scalatags.Text.tags2
+import scalatags.Text.TypedTag
 
 /** Assembles the method used to layout ScalaTags
   */
 object Layouts:
+  private def show_messages = 
+    val messages = List() // TODO Next step
+    if messages.length > 0 then
+      // TODO with a for, next step
+      div(
+        `class` := "msg",
+        span(`class` := "author"),
+        span(`class` := "msg-content", span(`class` := "mention")),
+      )
+    else
+      div(
+        `class` := "msg-wait",
+        p("Please wait, the messages are loading !")
+      )
+
   private def head_template =
     head(
       link(rel := "stylesheet", href := "static/css/main.css"),
@@ -26,11 +42,7 @@ object Layouts:
             `class` := "content",
             div(
               id := "boardMessage",
-              div(
-                `class` := "msg",
-                span(`class` := "author"),
-                span(`class` := "msg-content", span(`class` := "mention"))
-              )
+              show_messages
             ),
             form(
               id := "msgForm",
