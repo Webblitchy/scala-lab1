@@ -7,6 +7,7 @@ import scalatags.Text.TypedTag
 /** Assembles the method used to layout ScalaTags
   */
 object Layouts:
+
   private def show_messages = 
     val messages = List() // TODO Next step
     if messages.length > 0 then
