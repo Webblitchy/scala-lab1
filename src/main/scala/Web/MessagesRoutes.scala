@@ -24,8 +24,11 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
         // DONE - Part 3 Step 2: Display the home page (with the message board and the form to send new messages)
         session.getCurrentUser.map(u => s"You are logged in as ${u} !")
                .getOrElse("You are not logged in !")
-  
-        Layouts.index // show page
+
+        session.getCurrentUser match
+          case Some(user) => Layouts.index(Option(user))
+          case None => Layouts.index(Option.empty)
+        
 
     // TODO - Part 3 Step 4b: Process the new messages sent as JSON object to `/send`. The JSON looks
     //      like this: `{ "msg" : "The content of the message" }`.

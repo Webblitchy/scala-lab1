@@ -3,6 +3,8 @@ package Web
 import scalatags.Text.all._
 import scalatags.Text.tags2
 import scalatags.Text.TypedTag
+import Web.Decorators.getSession
+import Data.SessionService
 
 /** Assembles the method used to layout ScalaTags
   */
@@ -28,17 +30,21 @@ object Layouts:
       link(rel := "stylesheet", href := "static/css/main.css"),
       script(src := "static/js/main.js")
     )
-  private def navbar_template =
+  private def navbar_template(username: Option[String]) =
     tags2.nav(
       div("Bot-tender", `class` := "nav-brand"),
-      a("login", href := "/login", `class` := "nav-item")
+      if username.isDefined then
+        a("logout", href := "/logout", `class` := "nav-item")
+      else
+        a("login", href := "/login", `class` := "nav-item")
     )
-  def index =
+
+  def index(username: Option[String]) =
     doctype("html")(
       html(
-        head_template(),
+        head_template,
         body(
-          navbar_template(),
+          navbar_template(username),
           div(
             `class` := "content",
             div(
@@ -63,40 +69,57 @@ object Layouts:
     )
   end index
 
-  def login =
+  def login(flash : Option[String]=None, login_failed : Boolean = false,register_failed :Boolean = false ) =
     doctype(
       "html"
     )(
       html(
-        head_template(),
+        head_template,
         body(
           tags2.nav(
             div("Bot-tender", `class` := "nav-brand"),
             a("Go to the message board", href := "/", `class` := "nav-item")
           ),
           div(
+            flash match
+              case Some(msg) => div(`class` := "msg", msg)
+              case None => div(),
             `class` := "content",
             div(
               id := "login_div",
               h1(b("Login")),
+              if login_failed then
+                div(
+                  `class` := "errorMsg",
+                  "This username is not valid 🥲"
+                )
+              else
+                div(),
               form(
                 action := "/login",
                 method := "post",
                 id := "login_form",
                 label(`for` := "username_login", "Username: "),
-                input(id := "username_login", `type` := "text"),
+                input(id := "username_login",name:="username", `type` := "text"),
                 input(`type` := "submit", value := "Login")
               )
             ),
             div(
               id := "register_div",
               h1(b("Register")),
+               if register_failed then
+                div(
+                  `class` := "errorMsg",
+                  "This username is already taken 🥲"
+                )
+              else
+                div(),
               form(
                 action := "/register",
                 method := "post",
                 id := "register_form",
                 label(`for` := "username_register", "Username: "),
-                input(id := "username_register", `type` := "text"),
+                input(id := "username_register",name:="username", `type` := "text"),
                 input(`type` := "submit", value := "Register")
               )
             )
@@ -106,4 +129,5 @@ object Layouts:
     )
 
   end login
+
 end Layouts
