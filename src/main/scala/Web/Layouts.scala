@@ -27,6 +27,7 @@ object Layouts:
 
   private def head_template =
     head(
+      meta(charset := "utf-8"),
       link(rel := "stylesheet", href := "static/css/main.css"),
       script(src := "static/js/main.js")
     )
