@@ -70,7 +70,7 @@ object Layouts:
     )
   end index
 
-  def login(flash : Option[String]=None, login_failed : Boolean = false,register_failed :Boolean = false ) =
+  def login(login_failed : Boolean = false, register_failed : Boolean = false) =
     doctype(
       "html"
     )(
@@ -82,9 +82,6 @@ object Layouts:
             a("Go to the message board", href := "/", `class` := "nav-item")
           ),
           div(
-            flash match
-              case Some(msg) => div(`class` := "msg", msg)
-              case None => div(),
             `class` := "content",
             div(
               id := "login_div",
@@ -130,5 +127,22 @@ object Layouts:
     )
 
   end login
+
+  def statusPage(message: String) =
+    doctype(
+      "html"
+    )(
+      html(
+      head_template,
+        div(
+          `class` := "statusPage",
+          div(
+            `class` := "statusMsg",
+            message
+          ),
+          a("Go to homepage", href:="/")
+        )
+      )
+    )
 
 end Layouts

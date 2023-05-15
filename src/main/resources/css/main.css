@@ -47,6 +47,13 @@ form > input[type="text"] {
     color: crimson;
     font-size: 0.8em;
 }
+.statusMsg {
+    padding: 3em 0 1em 0;
+    font-size: 2em;
+}
+.statusPage {
+    text-align: center;
+}
 #boardMessage {
     margin: 1em 0 0.2em 0;
     padding: 0.5em;

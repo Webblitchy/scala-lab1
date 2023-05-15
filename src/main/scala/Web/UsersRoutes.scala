@@ -1,6 +1,5 @@
 package Web
 
-import cask.Redirect
 import Data.{AccountService, SessionService, Session}
 import Web.Decorators.getSession
 
@@ -15,7 +14,7 @@ import Web.Decorators.getSession
   */
 class UsersRoutes(accountSvc: AccountService,
                   sessionSvc: SessionService)(implicit val log: cask.Logger) extends cask.Routes:
-    // TODO - Part 3 Step 3a: Display a login form and register form page for the following URL: `/login`.
+    // DONE - Part 3 Step 3a: Display a login form and register form page for the following URL: `/login`.
     @getSession(sessionSvc)
     @cask.get("/login")
     def login()(session : Session) =
@@ -39,7 +38,7 @@ class UsersRoutes(accountSvc: AccountService,
             }
             case true => {
                 session.setCurrentUser(username.value)
-                Layouts.login(flash = Some(s"Login avec succès!"))
+                Layouts.statusPage("You are successfully logged in !")
             }
     end login_post
 
@@ -59,9 +58,7 @@ class UsersRoutes(accountSvc: AccountService,
             case false => {
                 log.debug(s" User ${username.value} created")
                 accountSvc.addAccount(username.value,30.0)
-                session.setCurrentUser(username.value)
-                cask.Redirect("/login")
-                Layouts.login(flash = Some(s"Enregistrement avec succès"))
+                Layouts.statusPage("You are successfully registered !")
             }
     // DONE - Part 3 Step 3d: Reset the current session and display a successful logout page.
     @getSession(sessionSvc)
@@ -69,6 +66,6 @@ class UsersRoutes(accountSvc: AccountService,
     def logout()(session : Session) =
         log.debug("GET /logout")
         session.reset()
-        Layouts.index(None)
+        Layouts.statusPage("You are successfully logged out !")
     initialize()
 end UsersRoutes
