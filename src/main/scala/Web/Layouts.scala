@@ -5,25 +5,36 @@ import scalatags.Text.tags2
 import scalatags.Text.TypedTag
 import Web.Decorators.getSession
 import Data.SessionService
+import Data.MessageService.MsgContent
+import Data.MessageService.Username
+import Data.Message
 
 /** Assembles the method used to layout ScalaTags
   */
 object Layouts:
 
-  private def show_messages = 
-    val messages = List() // TODO Next step
+  def messagesInBox(messages: List[Message]) = 
     if messages.length > 0 then
-      // TODO with a for, next step
-      div(
+      messages.map(msg => div(
         `class` := "msg",
-        span(`class` := "author"),
-        span(`class` := "msg-content", span(`class` := "mention")),
-      )
+        span(
+          msg.sender,
+          `class` := "author"
+        ),
+        span(
+          span(
+            msg.mention.getOrElse(""),
+            `class` := "mention"
+          ),
+          `class` := "msg-content", 
+          msg.msg,
+        ),
+      ))
     else
-      div(
+      List(div(
         `class` := "msg-wait",
         p("Please wait, the messages are loading !")
-      )
+      ))
 
   private def head_template =
     head(
@@ -31,26 +42,26 @@ object Layouts:
       link(rel := "stylesheet", href := "static/css/main.css"),
       script(src := "static/js/main.js")
     )
-  private def navbar_template(username: Option[String]) =
+  private def navbar_template(isConnected: Boolean) =
     tags2.nav(
       div("Bot-tender", `class` := "nav-brand"),
-      if username.isDefined then
+      if isConnected then
         a("logout", href := "/logout", `class` := "nav-item")
       else
         a("login", href := "/login", `class` := "nav-item")
     )
 
-  def index(username: Option[String]) =
+  def index(isConnected: Boolean = false, messages: List[Message] = List()) =
     doctype("html")(
       html(
         head_template,
         body(
-          navbar_template(username),
+          navbar_template(isConnected),
           div(
             `class` := "content",
             div(
               id := "boardMessage",
-              show_messages
+              messagesInBox(messages),
             ),
             form(
               id := "msgForm",
@@ -71,9 +82,7 @@ object Layouts:
   end index
 
   def login(login_failed : Boolean = false, register_failed : Boolean = false) =
-    doctype(
-      "html"
-    )(
+    doctype("html")(
       html(
         head_template,
         body(
@@ -129,9 +138,7 @@ object Layouts:
   end login
 
   def statusPage(message: String) =
-    doctype(
-      "html"
-    )(
+    doctype("html")(
       html(
       head_template,
         div(

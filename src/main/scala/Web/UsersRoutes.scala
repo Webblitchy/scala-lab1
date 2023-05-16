@@ -20,7 +20,7 @@ class UsersRoutes(accountSvc: AccountService,
     def login()(session : Session) =
         log.debug("GET /login")
         session.getCurrentUser match
-            case Some(user) => Layouts.index(Option(user))
+            case Some(user) => Layouts.index(isConnected = true)
             case None => Layouts.login()
     
 

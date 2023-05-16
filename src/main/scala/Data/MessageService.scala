@@ -8,6 +8,15 @@ object MessageService:
   type Username = String
   type MsgContent = Frag
 
+case class Message(
+    id: Long,
+    sender: Username,
+    msg: MsgContent,
+    mention: Option[Username] = None,
+    exprType: Option[ExprTree] = None,
+    replyToId: Option[Long] = None
+)
+
 trait MessageService:
   /** Retrieve the latest N added messages
     * @param n
@@ -15,7 +24,7 @@ trait MessageService:
     * @return
     *   The content of the messages and their senders
     */
-  def getLatestMessages(n: Int): Seq[(Username, MsgContent)]
+  def getLatestMessages(n: Int): List[Message]
 
   /** Add a message to the history
     * @param sender
@@ -49,7 +58,7 @@ trait MessageService:
 class MessageImpl extends MessageService:
   // TODO - Part 3 Step 4a: Store the messages and the corresponding user in memory.
   //       Implement methods to add new messages, to get the last 20 messages and to delete all existing messages.
-  var messages = List[(Username, MsgContent,long)]()
+  var messages = List[Message]()
   override def add(
       sender: Username,
       msg: MsgContent,
@@ -57,15 +66,17 @@ class MessageImpl extends MessageService:
       exprType: Option[ExprTree] = None,
       replyToId: Option[Long] = None
   ): Long =
-    val message_id = if messages.length == 0 then 0 else messages.last._3 + 1
-    messages = messages :+ (sender, msg, message_id)
+    val message_id = if messages.length == 0 then 0 else messages.last.id + 1
+    messages = messages :+ Message(message_id, sender, msg, mention, exprType, replyToId)
     if messages.length > 20 then messages = messages.tail
     message_id
     
   override def getLatestMessages(n: Int) =
-    if n > 20 then 
-      throw IllegalArgumentException("n must be less than 20")
-    messages
+    // we only store the last 20 messages
+    if n > 20 && n < 1 then 
+      throw new Exception("n must be between 1 and 20")
+      
+    messages.takeRight(n)
 
   override def deleteHistory(): Unit =
-    ???
+    messages = List[Message]()
