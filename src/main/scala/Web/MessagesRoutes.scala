@@ -7,6 +7,8 @@ import Data.MessageImpl
 import scala.collection.mutable.ListBuffer
 import castor.Context.Simple.global // To resolve bug
 import scalatags.Text.StringFrag
+import Chat.Parser
+import Chat.UnexpectedTokenException
 
 /**
   * Assembles the routes dealing with the message board:
@@ -29,7 +31,7 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
     @cask.get("/")
     def index()(session: Session) =
         // DONE - Part 3 Step 2: Display the home page (with the message board and the form to send new messages)
-        Layouts.index(session.getCurrentUser.isDefined, msgSvc.getLatestMessages(20))
+        Layouts.index(session.getCurrentUser, msgSvc.getLatestMessages(20))
         
         
 
@@ -57,17 +59,44 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
 
     @getSession(sessionSvc)
     @cask.postJson("/send")
-    def send(msg: String)(session: Session) = 
+    def send(msg: String)(session: Session) : ujson.Obj = 
       if msg.isEmpty then
         ujson.Obj("success" -> false, "err" -> "Message is empty")
       else if session.getCurrentUser.isEmpty then
         ujson.Obj("success" -> false, "err" -> "No user is logged in")
       else
         log.debug(s"Message sent: $msg")
-        // add new message to the database
+
         if msg.startsWith("@") then
           val (username, message) = msg.splitAt(msg.indexOf(" "))
-          msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
+
+          // TODO - Part 3 Step 5: Modify the code of step 4b to process the messages sent to the bot (message
+          //      starts with `@bot `). 
+          //      This message and its reply from the bot will be added to the message
+          //      store together. 
+          //      => impossible sinon le formattage du message du bot ne sera pas correct et le champ replyToId ne pourra pas être rempli
+          //
+          //      The exceptions raised by the `Parser` will be treated as an error (same as in step 4b)
+          if username == "@bot" then
+            // /!\ L'authentification Web et le compte (avec le pseudo) sont 2 choses complètement différentes
+            // c'est pourquoi il est possible à partir d'un seul compte Web de changer de pseudo (avec plusieurs soldes)
+            try
+              val tokenized = tokenizerSvc.tokenize(message.toLowerCase())
+
+              val parser = new Parser(tokenized)
+              val expr = parser.parsePhrases()
+
+              val result = analyzerSvc.reply(session)(expr)
+
+              // add message only if valid
+              val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
+              msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
+              log.debug(s"Bot reply: $result")
+            catch
+              case e: UnexpectedTokenException => 
+                return ujson.Obj("success" -> false, "err" -> e.getMessage) // to avoid sending success message
+          else
+            msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
         else
           msgSvc.add(session.getCurrentUser.get, StringFrag(msg) , None, None)
 
@@ -90,12 +119,6 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
       msgSvc.deleteHistory()
       Layouts.statusPage("History cleared !")
 
-    // TODO - Part 3 Step 5: Modify the code of step 4b to process the messages sent to the bot (message
-    //      starts with `@bot `). This message and its reply from the bot will be added to the message
-    //      store together.
-    //
-    //      The exceptions raised by the `Parser` will be treated as an error (same as in step 4b)
-    // TODO Eliott : reply to ID for the bot
 
     initialize()
 end MessagesRoutes

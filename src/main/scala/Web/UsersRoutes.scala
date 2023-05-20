@@ -18,9 +18,9 @@ class UsersRoutes(accountSvc: AccountService,
     @getSession(sessionSvc)
     @cask.get("/login")
     def login()(session : Session) =
-        log.debug("GET /login")
+        log.debug(s"GET /login with session: ${session.getCurrentUser}")
         session.getCurrentUser match
-            case Some(user) => Layouts.index(isConnected = true)
+            case Some(user) => Layouts.index(Some(user))
             case None => Layouts.login()
     
 

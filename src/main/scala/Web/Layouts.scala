@@ -42,21 +42,24 @@ object Layouts:
       link(rel := "stylesheet", href := "static/css/main.css"),
       script(src := "static/js/main.js")
     )
-  private def navbar_template(isConnected: Boolean) =
+  private def navbar_template(username : Option[String]) =
     tags2.nav(
       div("Bot-tender", `class` := "nav-brand"),
-      if isConnected then
-        a("logout", href := "/logout", `class` := "nav-item")
+      if username.isDefined then
+        span(
+          s"Hello ${username.get} !",
+          a("logout", href := "/logout", `class` := "nav-item")
+        )
       else
         a("login", href := "/login", `class` := "nav-item")
     )
 
-  def index(isConnected: Boolean = false, messages: List[Message] = List()) =
+  def index(username: Option[String] = None, messages: List[Message] = List()) =
     doctype("html")(
       html(
         head_template,
         body(
-          navbar_template(isConnected),
+          navbar_template(username),
           div(
             `class` := "content",
             div(
