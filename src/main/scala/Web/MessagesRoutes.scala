@@ -79,14 +79,14 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
           //      The exceptions raised by the `Parser` will be treated as an error (same as in step 4b)
           if username == "@bot" then
             // /!\ L'authentification Web et le compte (avec le pseudo) sont 2 choses complètement différentes
-            // c'est pourquoi il est possible à partir d'un seul compte Web de changer de pseudo (avec plusieurs soldes)
+            // Nous avons donc enlever la gestion des session du bot
             try
               val tokenized = tokenizerSvc.tokenize(message.toLowerCase())
 
               val parser = new Parser(tokenized)
               val expr = parser.parsePhrases()
 
-              val result = analyzerSvc.reply(session)(expr)
+              val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
 
               // add message only if valid
               val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)

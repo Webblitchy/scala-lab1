@@ -126,9 +126,9 @@ class AnalyzerService(productSvc: ProductService, accountSvc: AccountService):
           case None =>
             "Je ne sais pas qui vous êtes ! Veuillez d'abord vous identifier."
       case Login(user) =>
-        session.setCurrentUser(user)
-        if !accountSvc.isAccountExisting(user) then
-          accountSvc.addAccount(user, 30.0) // new account start with 30 CHF
+        // session.setCurrentUser(user)
+        // if !accountSvc.isAccountExisting(user) then
+        //   accountSvc.addAccount(user, 30.0) // new account start with 30 CHF
         "Bonjour " + user + " !"
       case _ => "Je ne comprends pas votre demande."
 end AnalyzerService
