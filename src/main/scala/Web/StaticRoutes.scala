@@ -8,5 +8,6 @@ class StaticRoutes()(implicit val log: cask.Logger) extends cask.Routes:
     //      Do not forget to link to them from your HTML.
     @cask.staticResources("/static")
     def staticResourceRoutes() = "."
+
     initialize()
 end StaticRoutes
