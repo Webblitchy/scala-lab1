@@ -34,20 +34,22 @@ trait AccountService:
 
 class AccountImpl extends AccountService:
   // DONE - Part 2 Step 2
-  val map = mutable.Map[String, Double]()
+  val map = synchronized{ mutable.Map[String, Double]()}
   def getAccountBalance(user: String): Double = 
-    map.getOrElse(user, 0.0)
+    synchronized {map.getOrElse(user, 0.0)}
   def addAccount(user: String, balance: Double): Unit = 
-    if !isAccountExisting(user) then 
-      map.put(user, balance)
+    synchronized{ if !isAccountExisting(user) then 
+      map.put(user, balance)}
   def isAccountExisting(user: String): Boolean = 
-    map.contains(user)
+    synchronized{map.contains(user)}
   def purchase(user: String, amount: Double): Double = 
-    if isAccountExisting(user) && getAccountBalance(user) >= amount then
-      val new_amount = getAccountBalance(user)-amount;
-      map.put(user,  new_amount);
-      new_amount
-    else
-      0.0
+    synchronized {
+      if isAccountExisting(user) && getAccountBalance(user) >= amount then 
+        val new_amount = getAccountBalance(user)-amount;
+        map.put(user,  new_amount);
+        new_amount
+      else
+        0.0
+    }
     
 end AccountImpl

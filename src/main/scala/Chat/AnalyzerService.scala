@@ -81,6 +81,25 @@ class AnalyzerService(productSvc: ProductService, accountSvc: AccountService):
         else s"${stringify(left)}"
       case _ => { println("i don't know how we ended up here 2"); "ERROR " }
       
+  /**
+    * Return the list of items in the Expression Tree
+    */
+  
+  def list_of_item(session:Session)(t:ExprTree):List[(Int,String)] = 
+    def flatten(inner_t : ExprTree, acc : List[(Int,String)]):List[(Int,String)] = 
+      inner_t match
+        case Thirsty => Nil
+        case Hungry => Nil
+        case AskSold => Nil
+        case Buy(command) => list_of_item(session)(command)
+        case AskPrice(command) => list_of_item(session)(command)
+        case Login(user) => Nil
+        case Or(left, right) => flatten(left,acc) ++ flatten(right,acc)
+        case And(left, right) => flatten(left,acc) ++ flatten(right,acc)
+        //we compute a hash using the product and the brand
+        case Command(num, product, brand) => (num,s"$product${brand.getOrElse("")}") :: acc
+    flatten(t,Nil)
+    
 
   /** Return the output text of the current node, in order to write it in
     * console.

@@ -9,6 +9,11 @@ import castor.Context.Simple.global // To resolve bug
 import scalatags.Text.StringFrag
 import Chat.Parser
 import Chat.UnexpectedTokenException
+import Chat.ExprTree
+import Chat.ExprTree.*
+import scala.collection.concurrent.TrieMap
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Assembles the routes dealing with the message board:
@@ -85,13 +90,16 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
 
               val parser = new Parser(tokenized)
               val expr = parser.parsePhrases()
-
-              val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
-
-              // add message only if valid
-              val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
-              msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
-              log.debug(s"Bot reply: $result")
+              expr match
+                case Buy(command) => 
+                  log.debug(s"We tried to stringify the command : ${command}")
+                  val result = s"Votre commande est en préparation :${analyzerSvc.stringify(command)}"
+                  val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
+                  msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
+                case _ => val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
+                  val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
+                  msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
+                  log.debug(s"Bot reply: $result")
             catch
               case e: UnexpectedTokenException => 
                 return ujson.Obj("success" -> false, "err" -> e.getMessage) // to avoid sending success message
