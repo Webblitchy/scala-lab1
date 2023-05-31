@@ -14,6 +14,8 @@ import Chat.ExprTree.*
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+// import Chat.AnalyzerService.list_of_item
 
 /**
   * Assembles the routes dealing with the message board:
@@ -73,6 +75,7 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
         log.debug(s"Message sent: $msg")
 
         if msg.startsWith("@") then
+          var orders : TrieMap[String,Future[ExprTree]] = TrieMap[String,Future[ExprTree]]()
           val (username, message) = msg.splitAt(msg.indexOf(" "))
 
           // TODO - Part 3 Step 5: Modify the code of step 4b to process the messages sent to the bot (message
@@ -93,6 +96,7 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
               expr match
                 case Buy(command) => 
                   log.debug(s"We tried to stringify the command : ${command}")
+                  log.debug(s"We tried to simplifiy the command : ${analyzerSvc.reverseTree(command)}")
                   val result = s"Votre commande est en préparation :${analyzerSvc.stringify(command)}"
                   val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
                   msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))

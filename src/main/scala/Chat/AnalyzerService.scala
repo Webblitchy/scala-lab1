@@ -1,5 +1,7 @@
 package Chat
 import Data.{AccountService, ProductService, Session}
+import Vector._
+import scala.quoted.Expr
 
 class AnalyzerService(productSvc: ProductService, accountSvc: AccountService):
   import ExprTree._
@@ -49,6 +51,99 @@ class AnalyzerService(productSvc: ProductService, accountSvc: AccountService):
         foldLeft(computePrice(left), t)
       case _ => { println(s"we ended up erroring 4\n${t}"); Double.NaN }
 
+  def computePrice_left(t: ExprTree) : Double = 
+    t match
+      case Command(num, product, brand) =>
+        val brandName = brand.getOrElse(productSvc.getDefaultBrand(product));
+        val price = productSvc.getPrice(product, brandName)
+        num * price
+      case Or(left, right) =>
+        if computePrice_left(left) < computePrice_left(right) then computePrice_left(left)
+        else computePrice_left(right)
+      case And(left, right) =>
+        computePrice_left(left) + computePrice_left(right)
+      case _ => { println(s"we ended up erroring 4\n${t}"); Double.NaN }
+  def stringify_left(t: ExprTree) : String =
+    t match
+      case Command(1, product, brand) => s"1 $product ${brand.getOrElse("")}"
+      case Command(n, product, brand) =>
+        s"$n ${product}s ${brand.getOrElse("")}"
+      case And(left, right) =>
+        s"$stringify_left(left) et $stringify_left(right)"
+      case Or(left, right) =>
+        if computePrice_left(left) > computePrice_left(right) then s"${stringify_left(right)}"
+        else s"${stringify_left(left)}"
+      case _ => { println("i don't know how we ended up here 2"); "ERROR " }
+  def simplify_left(t: ExprTree): ExprTree = 
+    t match
+      case Command(_,_,_) => t
+      case Or(left, right) =>
+        if computePrice_left(left) < computePrice_left(right) then simplify_left(left)
+        else simplify_left(right)
+      case And(left, right) => 
+        val l = simplify_left(left)
+        val r = simplify_left(right)
+        And(l,r)
+      case _ => { println(s"we ended up erroring with tree\n${t}"); t }
+  /**
+    * Simplify the tree by removing useless nodes.
+    * nous : And(Command(1,biere,None),Or(Command(2,croissant,None),Command(1,biere,Some(punkipa))))
+      Eux : Or(
+              And(Product(1,biere,None),
+                  Product(2,croissant,None))
+              ,Product(1,biere,Some(punkipa))))"
+    *
+    * @param t
+    * @return
+    */
+  def reverseTree(t:ExprTree):ExprTree =
+    def notation_polonaise(inner_t:ExprTree, acc_cmd:List[ExprTree],acc_op:List[String]) : ExprTree = 
+      inner_t match
+        case And(left:Command, right:Command) => notation_polonaise(Hungry,right::left::acc_cmd, "et"::acc_op)
+        case And(left, right) => notation_polonaise(right, left::acc_cmd, "et"::acc_op)
+        case Or(left:Command, right:Command) => notation_polonaise(Hungry, right::left::acc_cmd, "ou"::acc_op)
+        case Or(left, right) => notation_polonaise(right,  left::acc_cmd, "ou"::acc_op)
+        case Command(_,_,_) => t
+        case _ => {
+          print(acc_op,acc_cmd);
+          var ops = acc_op.reverse 
+          var cmds = acc_cmd.reverse
+          val cmd1= cmds.head
+          val cmd2= cmds.tail.head
+          var acc = ops.head match
+            case "et" => And(cmd1,cmd2)
+            case "ou" => Or(cmd1,cmd2)
+          cmds = cmds.drop(2)
+          ops = ops.tail
+          while !ops.isEmpty do
+            val cmd = acc_cmd.head
+            val op = ops.head
+            acc = op match
+              case "et" => And(acc,cmd)
+              case "ou" => Or(acc,cmd)
+            ops = ops.tail
+          acc
+        }
+
+    notation_polonaise(t,List(),List())  
+    
+
+    // def loop(inner_t :ExprTree, acc_cmds : Vector[ExprTree.Command], acc_logic : Vector[ExprTree]):(Vector[ExprTree],Vector[ExprTree]) =
+    //   inner_t match
+    //     case Command => 
+      // t match
+      //   case Command(_,_,_)  => t
+      //   case Or(left, right) =>
+      //     val r = simplifyTree(right)
+      //     if computePrice(left) < computePrice(r) then left
+      //     else r
+      //   case And(left, right) => 
+      //     val l = simplifyTree(left)
+      //     val r = simplifyTree(right)
+      //     if computePrice(l) < computePrice(r) then l
+      //     else r
+      //   case _ => { println(s"we ended up erroring with tree\n${t}"); t }
+    
   def foldLeftString(acc_str: String, acc_sum: Double, t: ExprTree): String =
     t match
       case Or(left, right: Command) =>
