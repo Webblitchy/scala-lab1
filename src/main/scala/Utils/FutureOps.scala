@@ -3,6 +3,9 @@ package Utils
 import scala.concurrent.Future
 import scala.concurrent.duration.*
 import scala.util.{Failure, Random, Success}
+import Chat.ExprTree
+import Chat.AnalyzerService
+import Data.Session
 
 object FutureOps {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,4 +26,5 @@ object FutureOps {
       if !succeed then throw new Exception("Failed future")
       else ()
     }
+
 }

@@ -3,6 +3,8 @@ import Data.*
 import Utils.*
 import Web.{StaticRoutes, UsersRoutes}
 import Web.{MessagesRoutes}
+import scala.collection.concurrent.TrieMap
+import scala.concurrent.Future
 
 object MainFuture extends cask.Main:
   val spellCheckerSvc = new SpellCheckerImpl(Dictionary.dictionary)
@@ -12,11 +14,12 @@ object MainFuture extends cask.Main:
   val accountSvc: AccountService = new AccountImpl()
   val analyzerSvc = new AnalyzerService(productSvc, accountSvc)
   val msgSvc: MessageService = new MessageConcurrentImpl(new MessageImpl())
+  var currentOrders = TrieMap[Long,Future[String]]()
 
   val allRoutes = Seq(
       StaticRoutes(),
       UsersRoutes(accountSvc, sessionSvc),
-      MessagesRoutes(tokenizerSvc, analyzerSvc, msgSvc, accountSvc, sessionSvc),
+      MessagesRoutes(tokenizerSvc, analyzerSvc, msgSvc, accountSvc, sessionSvc, currentOrders),
   )
 
   override def port: Int = 8980

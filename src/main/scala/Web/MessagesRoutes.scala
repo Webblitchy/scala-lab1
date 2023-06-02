@@ -15,6 +15,9 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import Utils.FutureOps.*
+import scala.util.Success
+import scala.util.Failure
 // import Chat.AnalyzerService.list_of_item
 
 /**
@@ -29,7 +32,8 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                      analyzerSvc: AnalyzerService,
                      msgSvc: MessageService,
                      accountSvc: AccountService,
-                     sessionSvc: SessionService)(implicit val log: cask.Logger) extends cask.Routes:
+                     sessionSvc: SessionService,
+                     currentOrders: TrieMap[Long,Future[String]])(implicit val log: cask.Logger) extends cask.Routes:
     import Decorators.getSession
 
     val websockets: ListBuffer[cask.WsChannelActor] = ListBuffer() // (ListBuffer is capable to remove an element by value)
@@ -75,15 +79,14 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
         log.debug(s"Message sent: $msg")
 
         if msg.startsWith("@") then
-          var orders : TrieMap[String,Future[ExprTree]] = TrieMap[String,Future[ExprTree]]()
           val (username, message) = msg.splitAt(msg.indexOf(" "))
 
-          // TODO - Part 3 Step 5: Modify the code of step 4b to process the messages sent to the bot (message
+          // DONE - Part 3 Step 5: Modify the code of step 4b to process the messages sent to the bot (message
           //      starts with `@bot `). 
           //      This message and its reply from the bot will be added to the message
           //      store together. 
           //      => impossible sinon le formattage du message du bot ne sera pas correct et le champ replyToId ne pourra pas être rempli
-          //
+          // 
           //      The exceptions raised by the `Parser` will be treated as an error (same as in step 4b)
           if username == "@bot" then
             // /!\ L'authentification Web et le compte (avec le pseudo) sont 2 choses complètement différentes
@@ -98,8 +101,32 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                   log.debug(s"We tried to stringify the command : ${command}")
                   log.debug(s"We tried to simplifiy the command : ${analyzerSvc.reverseTree(command)}")
                   val result = s"Votre commande est en préparation :${analyzerSvc.stringify(command)}"
-                  val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
-                  msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
+                  val commandId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
+                  msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
+
+                  val commands = analyzerSvc.list_of_item(expr)
+                  for command <- commands do
+                    // TODO : rendre plus joli et gestion de l'argent ?
+                    def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String) : Unit =
+                      randomSchedule(Duration(5, "seconds"), Duration(2, "seconds"), 1) onComplete { // TODO changer le success rate à 0.8
+                        case Success(_) => 
+                          if currentNb == totalNb then
+                            val result = s"Votre commande est prête :${totalNb} ${prodName}" // TODO dire que la commande est prête que si tous les produits sont prêts:w
+                            msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
+                            sendLastMessages
+                          else 
+                            val result = s"Votre commande est partiellement prête :${currentNb} ${prodName}"
+                            msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
+                            sendLastMessages
+                            makeSameProduct(currentNb+1, totalNb, prodName) // prépare le prochain produit après le précédent
+                        case Failure(_) => 
+                          val result = s"Votre commande a échoué :${prodName}"
+                          msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
+                          sendLastMessages
+                      }
+                    makeSameProduct(1, command._1, command._2)
+                  //currentOrders.put(commandId,) // c'est quoi le but ?
+
                 case _ => val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
                   val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
                   msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))

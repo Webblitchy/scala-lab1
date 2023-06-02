@@ -2,6 +2,8 @@ import Web.{UsersRoutes, MessagesRoutes, StaticRoutes}
 import Chat._
 import Data._
 import Utils._
+import scala.collection.concurrent.TrieMap
+import scala.concurrent.Future
 
 object MainChatroom extends cask.Main:
   val spellCheckerSvc: SpellCheckerService = new SpellCheckerImpl(
@@ -17,7 +19,7 @@ object MainChatroom extends cask.Main:
   val allRoutes = Seq(
     StaticRoutes(),
     UsersRoutes(accountSvc, sessionSvc),
-    MessagesRoutes(tokenizerSvc, analyzerSvc, msgSvc, accountSvc, sessionSvc)
+    MessagesRoutes(tokenizerSvc, analyzerSvc, msgSvc, accountSvc, sessionSvc, TrieMap[Long, Future[String]]())
   )
 
   override def port: Int = 8980
