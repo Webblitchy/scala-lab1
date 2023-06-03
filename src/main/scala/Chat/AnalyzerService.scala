@@ -96,7 +96,7 @@ class AnalyzerService(productSvc: ProductService, accountSvc: AccountService):
     * @param t
     * @return
     */
-  def reverseTree(t:ExprTree):ExprTree =
+  def make_left_tree(t:ExprTree):ExprTree =
     def notation_polonaise(inner_t:ExprTree, acc_cmd:List[ExprTree],acc_op:List[String]) : ExprTree = 
       inner_t match
         case And(left:Command, right:Command) => notation_polonaise(Hungry,right::left::acc_cmd, "et"::acc_op)
@@ -192,7 +192,7 @@ class AnalyzerService(productSvc: ProductService, accountSvc: AccountService):
         case Or(left, right) => flatten(left,acc) ++ flatten(right,acc)
         case And(left, right) => flatten(left,acc) ++ flatten(right,acc)
         //we compute a hash using the product and the brand
-        case Command(num, product, brand) => (num,s"$product${brand.getOrElse("")}") :: acc
+        case Command(num, product, brand) => (num,s"$product${brand.getOrElse(productSvc.getDefaultBrand(product))}") :: acc
     flatten(t,Nil)
     
 
