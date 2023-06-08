@@ -46,7 +46,7 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
         
         
 
-    // TODO - Part 3 Step 4b: Process the new messages sent as JSON object to `/send`. The JSON looks
+    // DONE - Part 3 Step 4b: Process the new messages sent as JSON object to `/send`. The JSON looks
     //      like this: `{ "msg" : "The content of the message" }`.
     //
     //      A JSON object is returned. If an error occurred, it looks like this:
@@ -109,54 +109,39 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                   log.debug(s"La commande a préparer :${analyzerSvc.simplifyTree(command)}")
                   val simplifiedTree = analyzerSvc.simplifyTree(command)
                   log.debug(s"La list des éléments a préparer avec les futurs :${analyzerSvc.list_of_item(simplifiedTree)}")
-/*
-biere -> futur ->futur -> sucess
-CroissantCailer -> futur  -> Fail
-...
-
--> recuperer les commandes réussies
-*/
 
                   var orders: TrieMap[String,Int] = TrieMap()
-                  for command <- commands do
-                    // currentOrders.updateWith(command._2)(
-                    // Some(f => f.flatMap(_ => Future.successful(s"${command._1}"))
-                    // ))
-                    // TODO : rendre plus joli et gestion de l'argent ?
+                  var futurFinished :Boolean =synchronized{ false}
+                  val lastCmdIdx = commands.length - 1
+                  for (command,num) <- commands.zipWithIndex do
+
                     def incrOption(o : Option[Int]) = o match 
                       case None => Some(1)//la première command réussis ajoute 1 produit finis
                       case Some(v) => Some(v+1)
                     
                     def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String,cmd : ExprTree.Command) : Unit =
                       randomSchedule(Duration(2, "seconds"), Duration(1, "seconds"), 0.7) transformWith { 
-                        case Failure(exception) => Future{()}
+                        case Failure(exception) => Future{
+                          if num == lastCmdIdx then
+                              futurFinished = true
+                          ()
+                        }
                         case Success(value) => Future{
+                          if num == lastCmdIdx then
+                              futurFinished = true
                           orders.updateWith(prodName)(incrOption)
                           ()
                         }
                       }
                       if currentNb != totalNb then
                         makeSameProduct(currentNb+1, totalNb, prodName,cmd) // prépare le prochain produit après le précédent
-
-                      //   case Success(_) => 
-                      //     if currentNb == totalNb then
-                      //       val result = s"Votre commande est prête :${totalNb} ${prodName}" // TODO dire que la commande est prête que si tous les produits sont prêts:w
-                      //       msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
-                      //       sendLastMessages
-                      //     else 
-                      //       val result = s"Votre commande est partiellement prête :${currentNb} ${prodName}"
-                      //       msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
-                      //       sendLastMessages
-                      //       makeSameProduct(currentNb+1, totalNb, prodName) // prépare le prochain produit après le précédent
-                      //   case Failure(_) => 
-                      //     val result = s"Votre commande a échoué :${prodName}"
-                      //     msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
-                      //     sendLastMessages
-                      // }
-                      
                     makeSameProduct(1, command._1, command._2,command._3)
-                  //currentOrders.put(commandId,) // c'est quoi le but ?
+                    // Wait that all futures are completed (failed or not)
+                    while !futurFinished // no need for syncronize{}, 'cause in the worst case we sleep a bit too much
+                    do Thread.sleep(10)
 
+                    // TODO compute the price knowing how many product of each type are finished (stored in the TrieMap orders)
+                    // TODO handle the partial responses and and the money
                 case _ => val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
                   val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
                   msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
@@ -172,7 +157,7 @@ CroissantCailer -> futur  -> Fail
         sendLastMessages
         ujson.Obj("success" -> true, "err" -> "")
 
-    // TODO - Part 3 Step 4c: Process and store the new websocket connection made to `/subscribe`
+    // DONE - Part 3 Step 4c: Process and store the new websocket connection made to `/subscribe`
     @cask.websocket("/subscribe")
     def subscribe(): cask.WebsocketResult  = 
       cask.WsHandler { channel =>
@@ -182,7 +167,7 @@ CroissantCailer -> futur  -> Fail
         }
       }
 
-    // TODO - Part 3 Step 4d: Delete the message history when a GET is made to `/clearHistory`
+    // DONE - Part 3 Step 4d: Delete the message history when a GET is made to `/clearHistory`
     @cask.get("/clearHistory")
     def clearHistory() = 
       msgSvc.deleteHistory()
