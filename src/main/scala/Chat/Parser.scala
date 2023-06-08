@@ -76,7 +76,7 @@ class Parser(tokenized: Tokenized):
       AskPrice(parseCommand)
     else expected(JE, COMBIEN, QUEL) // pourquoi BONJOUR
 
-  def parseCommand : ExprTree =
+  def produit: ExprTree =
     var command : Command = null
     if curToken == NUM then
       val num = curValue.toInt
@@ -91,12 +91,62 @@ class Parser(tokenized: Tokenized):
           command = Command(num, product, Some(brand))
       else expected(PRODUIT)
     else expected(NUM)
+    command
 
-    if curToken == ET then
-      readToken()
-      And(command, parseCommand)
-    else if curToken == OU then
-      readToken()
-      Or(command, parseCommand)
-    else 
-      command
+  def parseCommand : ExprTree =
+    def _parseCommand(acc : ExprTree) : ExprTree =
+      if curToken == ET then
+        readToken()
+        _parseCommand(And(acc, produit))
+      else if curToken == OU then
+        readToken()
+        _parseCommand(Or(acc, produit))
+      else 
+        acc
+    _parseCommand(produit)
+    // var command : Command = null
+    // if curToken == NUM then
+    //   val num = curValue.toInt
+    //   readToken()
+    //   if curToken == PRODUIT then
+    //     val product = curValue
+    //     readToken()
+    //     command = Command(num, product, None)
+    //     if curToken == MARQUE then
+    //       val brand = curValue
+    //       readToken()
+    //       command = Command(num, product, Some(brand))
+    //   else expected(PRODUIT)
+    // else expected(NUM)
+
+    // if curToken == ET then
+    //   readToken()
+    //   And(command, parseCommand)
+    // else if curToken == OU then
+    //   readToken()
+    //   Or(command, parseCommand)
+    // else 
+    //  command
+    //  def produit(): ExprTree =
+    //    val quantite = eat(NUM)
+    //    val typeProduit = eat(PRODUIT)
+    //    val marque = curToken match
+    //      case MARQUE =>
+    //        Some(eat(MARQUE))
+    //      case _ => None
+    //    Product(quantite.toInt, typeProduit, marque)
+    //  def produits(): ExprTree =
+    //  // Introduction d'une méthode interne récursive avec accumulateur pour associativité gauche
+    //  def _produits(acc : ExprTree): ExprTree =
+    //    curToken match
+    //      case ET =>
+    //        readToken()
+    //        val prod = produit()
+    //        _produits(And(acc, prod))
+    //      case OU =>
+    //        readToken()
+    //        val prod = produit()
+    //        _produits(Or(acc, prod))
+    //      case _ => acc
+    //  // On passe le premier produit lu comme accumulateur pour construire l'arbre de gauche à droite
+    //  _produits(produit())

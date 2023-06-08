@@ -33,7 +33,7 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                      msgSvc: MessageService,
                      accountSvc: AccountService,
                      sessionSvc: SessionService,
-                     currentOrders: TrieMap[Long,Future[String]])(implicit val log: cask.Logger) extends cask.Routes:
+                     )(implicit val log: cask.Logger) extends cask.Routes:
     import Decorators.getSession
 
     val websockets: ListBuffer[cask.WsChannelActor] = ListBuffer() // (ListBuffer is capable to remove an element by value)
@@ -98,33 +98,63 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
               val expr = parser.parsePhrases()
               expr match
                 case Buy(command) => 
-                  log.debug(s"We tried to stringify the command : ${command}")
-                  log.debug(s"We tried to simplifiy the command : ${analyzerSvc.reverseTree(command)}")
-                  val result = s"Votre commande est en préparation :${analyzerSvc.stringify(command)}"
+                  val left_tree = analyzerSvc.stringify(command)
+                  log.debug(s"We tried to stringify the command : ${left_tree}")
+                  // log.debug(s"We tried to simplifiy the command : ${left_simplified_command}")
+                  val result = s"Votre commande est en préparation :${left_tree}"
                   val commandId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
                   msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
 
-                  val commands = analyzerSvc.list_of_item(expr)
+                  val commands = analyzerSvc.list_of_item(command)
+                  log.debug(s"La commande a préparer :${analyzerSvc.simplifyTree(command)}")
+                  val simplifiedTree = analyzerSvc.simplifyTree(command)
+                  log.debug(s"La list des éléments a préparer avec les futurs :${analyzerSvc.list_of_item(simplifiedTree)}")
+/*
+biere -> futur ->futur -> sucess
+CroissantCailer -> futur  -> Fail
+...
+
+-> recuperer les commandes réussies
+*/
+
+                  var orders: TrieMap[String,Int] = TrieMap()
                   for command <- commands do
+                    // currentOrders.updateWith(command._2)(
+                    // Some(f => f.flatMap(_ => Future.successful(s"${command._1}"))
+                    // ))
                     // TODO : rendre plus joli et gestion de l'argent ?
-                    def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String) : Unit =
-                      randomSchedule(Duration(5, "seconds"), Duration(2, "seconds"), 1) onComplete { // TODO changer le success rate à 0.8
-                        case Success(_) => 
-                          if currentNb == totalNb then
-                            val result = s"Votre commande est prête :${totalNb} ${prodName}" // TODO dire que la commande est prête que si tous les produits sont prêts:w
-                            msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
-                            sendLastMessages
-                          else 
-                            val result = s"Votre commande est partiellement prête :${currentNb} ${prodName}"
-                            msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
-                            sendLastMessages
-                            makeSameProduct(currentNb+1, totalNb, prodName) // prépare le prochain produit après le précédent
-                        case Failure(_) => 
-                          val result = s"Votre commande a échoué :${prodName}"
-                          msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
-                          sendLastMessages
+                    def incrOption(o : Option[Int]) = o match 
+                      case None => Some(1)//la première command réussis ajoute 1 produit finis
+                      case Some(v) => Some(v+1)
+                    
+                    def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String,cmd : ExprTree.Command) : Unit =
+                      randomSchedule(Duration(2, "seconds"), Duration(1, "seconds"), 0.7) transformWith { 
+                        case Failure(exception) => Future{()}
+                        case Success(value) => Future{
+                          orders.updateWith(prodName)(incrOption)
+                          ()
+                        }
                       }
-                    makeSameProduct(1, command._1, command._2)
+                      if currentNb != totalNb then
+                        makeSameProduct(currentNb+1, totalNb, prodName,cmd) // prépare le prochain produit après le précédent
+
+                      //   case Success(_) => 
+                      //     if currentNb == totalNb then
+                      //       val result = s"Votre commande est prête :${totalNb} ${prodName}" // TODO dire que la commande est prête que si tous les produits sont prêts:w
+                      //       msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
+                      //       sendLastMessages
+                      //     else 
+                      //       val result = s"Votre commande est partiellement prête :${currentNb} ${prodName}"
+                      //       msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
+                      //       sendLastMessages
+                      //       makeSameProduct(currentNb+1, totalNb, prodName) // prépare le prochain produit après le précédent
+                      //   case Failure(_) => 
+                      //     val result = s"Votre commande a échoué :${prodName}"
+                      //     msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
+                      //     sendLastMessages
+                      // }
+                      
+                    makeSameProduct(1, command._1, command._2,command._3)
                   //currentOrders.put(commandId,) // c'est quoi le but ?
 
                 case _ => val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
