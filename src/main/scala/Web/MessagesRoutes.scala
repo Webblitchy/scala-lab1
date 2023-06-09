@@ -18,6 +18,9 @@ import scala.concurrent.duration.Duration
 import Utils.FutureOps.*
 import scala.util.Success
 import scala.util.Failure
+
+
+
 // import Chat.AnalyzerService.list_of_item
 
 /**
@@ -105,43 +108,73 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                   val commandId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
                   msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
 
-                  val commands = analyzerSvc.list_of_item(command)
+                  val brandsInCommand = analyzerSvc.list_of_item(command)
                   log.debug(s"La commande a préparer :${analyzerSvc.simplifyTree(command)}")
                   val simplifiedTree = analyzerSvc.simplifyTree(command)
                   log.debug(s"La list des éléments a préparer avec les futurs :${analyzerSvc.list_of_item(simplifiedTree)}")
 
                   var orders: TrieMap[String,Int] = TrieMap()
-                  var futurFinished :Boolean =synchronized{ false}
-                  val lastCmdIdx = commands.length - 1
-                  for (command,num) <- commands.zipWithIndex do
+                  var futureProd = List[Future[Unit]]()
+                  val lastBrandIdx = brandsInCommand.length - 1
+                  for brandInCommand <- brandsInCommand do
 
                     def incrOption(o : Option[Int]) = o match 
-                      case None => Some(1)//la première command réussis ajoute 1 produit finis
+                      case None => Some(1)//la première commande réussit, ajoute 1 produit fini
                       case Some(v) => Some(v+1)
                     
-                    def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String,cmd : ExprTree.Command) : Unit =
-                      randomSchedule(Duration(2, "seconds"), Duration(1, "seconds"), 0.7) transformWith { 
-                        case Failure(exception) => Future{
-                          if num == lastCmdIdx then
-                              futurFinished = true
-                          ()
-                        }
-                        case Success(value) => Future{
-                          if num == lastCmdIdx then
-                              futurFinished = true
+                    def createProdFuture(prodName: Option[String] = None) : Future[Unit] = Future{
+                      prodName match
+                        // if unsuccessful, do nothing
+                        case None => () 
+                        // if successful, increment the number of finished product
+                        case Some(prodName) => 
                           orders.updateWith(prodName)(incrOption)
-                          ()
-                        }
-                      }
-                      if currentNb != totalNb then
-                        makeSameProduct(currentNb+1, totalNb, prodName,cmd) // prépare le prochain produit après le précédent
-                    makeSameProduct(1, command._1, command._2,command._3)
-                    // Wait that all futures are completed (failed or not)
-                    while !futurFinished // no need for syncronize{}, 'cause in the worst case we sleep a bit too much
-                    do Thread.sleep(10)
+                          orders.addOne(prodName,1)
+                    }
 
-                    // TODO compute the price knowing how many product of each type are finished (stored in the TrieMap orders)
-                    // TODO handle the partial responses and and the money
+
+                    def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String,cmd : ExprTree.Command, futures: List[Future[Unit]]) : List[Future[Unit]] =
+
+                      val lastInBrand = currentNb == totalNb
+
+                      val newFut = randomSchedule(Duration(2, "seconds"), Duration(1, "seconds"), 0.7) transformWith { 
+                        case Failure(exception) => createProdFuture()
+                        case Success(value) => createProdFuture(Some(prodName))
+                      }
+                      if !lastInBrand then
+                        makeSameProduct(currentNb+1, totalNb, prodName,cmd, newFut +: futures) // prépare le prochain produit après le précédent
+                      else
+                        newFut +: futures // retourne la liste des futurs
+
+                    val prodOfOneBrand = makeSameProduct(1, brandInCommand._1, brandInCommand._2,brandInCommand._3, List())
+
+                    futureProd = prodOfOneBrand ++ futureProd
+
+                  //-------------------
+                  // Après le for
+
+                  Future.sequence(futureProd).transformWith{
+                    case Success(_) => 
+                      var msg = "Votre commande est "
+                      if orders.size < futureProd.length then
+                        msg += "partiellement "
+
+                      msg += "prête !"
+
+                      log.debug(orders)
+
+                      // TODO calculer prix
+                      msgSvc.add("BotTender", StringFrag(msg) , None, None, Some(commandId))
+                      sendLastMessages
+
+                      Future{()}
+                    case Failure(exception) => 
+                      // normalement on ne devrait pas avoir d'erreur
+                      log.debug(s" error ${exception}")
+                      Future{()}
+                  }
+                    
+
                 case _ => val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
                   val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
                   msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
