@@ -101,10 +101,10 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
               val expr = parser.parsePhrases()
               expr match
                 case Buy(command) => 
-                  val left_tree = analyzerSvc.stringify(command)
-                  log.debug(s"We tried to stringify the command : ${left_tree}")
+                  val commandText = analyzerSvc.stringify(command)
+                  log.debug(s"We tried to stringify the command : ${commandText}")
                   // log.debug(s"We tried to simplifiy the command : ${left_simplified_command}")
-                  val result = s"Votre commande est en préparation :${left_tree}"
+                  val result = s"Votre commande est en préparation :${commandText}"
                   val commandId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
                   msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
 
@@ -155,15 +155,22 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
 
                   Future.sequence(futureProd).transformWith{
                     case Success(_) => 
-                      var msg = "Votre commande est "
+                      var msg = s"La commande de ${commandText} est "
+                      // partielle
                       if orders.size < futureProd.length then
-                        msg += "partiellement "
+                        var partCommand = ""
+                        for order <- orders do
+                          partCommand += s"${order._2} ${order._1} "
+                        msg += s"partiellement prête. Voici :${partCommand}"
 
-                      msg += "prête !"
+                      else
+                        msg += "prête !"
 
                       log.debug(orders)
+                      
+                      // TODO obtenir le prix
+                      //val totalPrice = orders.foldLeft(0)(_ + _._2 * productSvc.getPrice(_._1))
 
-                      // TODO calculer prix
                       msgSvc.add("BotTender", StringFrag(msg) , None, None, Some(commandId))
                       sendLastMessages
 
