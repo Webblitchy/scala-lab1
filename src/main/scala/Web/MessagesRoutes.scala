@@ -1,7 +1,7 @@
 package Web
 
 import Chat.{AnalyzerService, TokenizerService}
-import Data.{MessageService, AccountService, SessionService, Session}
+import Data.{MessageService, AccountService, SessionService, Session, ProductService}
 import Data.MessageImpl
 
 import scala.collection.mutable.ListBuffer
@@ -36,10 +36,16 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                      msgSvc: MessageService,
                      accountSvc: AccountService,
                      sessionSvc: SessionService,
+                     productSvc: ProductService
                      )(implicit val log: cask.Logger) extends cask.Routes:
     import Decorators.getSession
 
     val websockets: ListBuffer[cask.WsChannelActor] = ListBuffer() // (ListBuffer is capable to remove an element by value)
+
+
+    def incrOrCreate(o : Option[Int]) = o match 
+      case None => Some(1)//la première commande réussit, ajoute 1 produit fini
+      case Some(v) => Some(v+1)
 
     @getSession(sessionSvc) // This decorator fills the `(session: Session)` part of the `index` method.
     @cask.get("/")
@@ -95,98 +101,138 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
             // /!\ L'authentification Web et le compte (avec le pseudo) sont 2 choses complètement différentes
             // Nous avons donc enlever la gestion des session du bot
             try
+              // sending the user message
+              val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
+
               val tokenized = tokenizerSvc.tokenize(message.toLowerCase())
 
               val parser = new Parser(tokenized)
               val expr = parser.parsePhrases()
+
               expr match
                 case Buy(command) => 
+
                   val commandText = analyzerSvc.stringify(command)
                   log.debug(s"We tried to stringify the command : ${commandText}")
-                  // log.debug(s"We tried to simplifiy the command : ${left_simplified_command}")
                   val result = s"Votre commande est en préparation :${commandText}"
-                  val commandId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
-                  msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(commandId))
-
-                  val brandsInCommand = analyzerSvc.list_of_item(command)
+                  msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
+                  sendLastMessages
                   log.debug(s"La commande a préparer :${analyzerSvc.simplifyTree(command)}")
-                  val simplifiedTree = analyzerSvc.simplifyTree(command)
-                  log.debug(s"La list des éléments a préparer avec les futurs :${analyzerSvc.list_of_item(simplifiedTree)}")
+                  
+                  // var finishedProds: TrieMap[String,Int] = TrieMap()
+                  // var lastProdsInBrand = List[Future[Unit]]()
 
-                  var orders: TrieMap[String,Int] = TrieMap()
-                  var futureProd = List[Future[Unit]]()
-                  val lastBrandIdx = brandsInCommand.length - 1
-                  for brandInCommand <- brandsInCommand do
-
-                    def incrOption(o : Option[Int]) = o match 
-                      case None => Some(1)//la première commande réussit, ajoute 1 produit fini
-                      case Some(v) => Some(v+1)
+                  // val brandsInCommand = analyzerSvc.list_of_item(command)
+                  // for (brandName, brandProdNb) <- brandsInCommand do
                     
-                    def createProdFuture(prodName: Option[String] = None) : Future[Unit] = Future{
-                      prodName match
-                        // if unsuccessful, do nothing
-                        case None => () 
-                        // if successful, increment the number of finished product
-                        case Some(prodName) => 
-                          orders.updateWith(prodName)(incrOption)
-                    }
+                  //   def createProdFuture(prodName: Option[String] = None) : Future[Unit] = Future{
+                  //     var debugStr = "Creating product future "
+                  //     prodName match
+                  //       // if successful, increment the number of finished product
+                  //       case Some(prodName) => 
+                  //         debugStr += s"$prodName"
+                  //         finishedProds.updateWith(prodName)(incrOrCreate)
+                  //       case None => 
+                  //         debugStr = "failed"
+                  //         () 
+                  //     log.debug(debugStr)
+                  //   }
 
 
-                    def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String,cmd : ExprTree.Command, futures: List[Future[Unit]]) : List[Future[Unit]] =
+                  //   def makeSameProduct(currentNb: Int, totalNb: Int, prodName: String, previousFuture: Future[Unit]) : Future[Unit] =
 
-                      val lastInBrand = currentNb == totalNb
+                  //     val currentProd = randomSchedule(Duration(2, "seconds"), Duration(1, "seconds"), 0.7) transformWith { 
+                  //       case Failure(exception) => createProdFuture()
+                  //       case Success(value) => createProdFuture(Some(prodName))
+                  //     }
 
-                      val newFut = randomSchedule(Duration(2, "seconds"), Duration(1, "seconds"), 0.7) transformWith { 
-                        case Failure(exception) => createProdFuture()
-                        case Success(value) => createProdFuture(Some(prodName))
-                      }
-                      if !lastInBrand then
-                        // TODO: faire un flatmap pour préparer le prochain produit que quand le précédent est fini
-                        makeSameProduct(currentNb+1, totalNb, prodName,cmd, newFut +: futures) // prépare le prochain produit après le précédent
-                      else
-                        // TODO : on peut ajouter que le dernier future (car on attend que sur lui)
-                        newFut +: futures // retourne la liste des futurs
+                  //     // si pas le dernier
+                  //     if currentNb != totalNb then
+                  //       previousFuture.transformWith(
+                  //         // On continue lorsque le précédent est fini (reussi ou non)
+                  //         _ => makeSameProduct(currentNb+1, totalNb, prodName, currentProd)
+                  //       )
+                  //     else
+                  //       currentProd // retourne le dernier future
 
-                    val prodOfOneBrand = makeSameProduct(1, brandInCommand._1, brandInCommand._2,brandInCommand._3, List())
+                  //   val lastProdOfOneBrand = makeSameProduct(1, brandProdNb, brandName, Future.successful(()))
 
-                    futureProd = prodOfOneBrand ++ futureProd
+                  //   // On sauve le dernier future dans la liste
+                  //   lastProdsInBrand = lastProdOfOneBrand +: lastProdsInBrand
 
-                  //-------------------
-                  // Après le for
+                  // //-------------------
+                  
+                  // // Quand tous les produits sont finis, on envoie le message
+                  // Future.sequence(lastProdsInBrand).transformWith{
+                  //   case Success(_) => 
+                  //     val nbMadeProd = finishedProds.foldLeft(0)(_ + _._2)
+                  //     val nbOrderedProd = brandsInCommand.foldLeft(0)(_ + _._2)
 
-                  Future.sequence(futureProd).transformWith{
-                    case Success(_) => 
-                      var msg = s"La commande de ${commandText} est "
-                      // partielle
-                      if orders.size < futureProd.length then
-                        var partCommand = ""
-                        for order <- orders do
-                          partCommand += s"${order._2} ${order._1} "
-                        msg += s"partiellement prête. Voici :${partCommand}"
+                  //     var msg = s"La commande de ${commandText} "
+                  //     if nbMadeProd == 0 then
+                  //       msg += "ne peut pas être délivrée."
+                  //     else
+                  //       // partielle
+                  //       if nbMadeProd < nbOrderedProd then
+                  //         val partCommand = finishedProds.foldLeft("")(
+                  //           (acc, order) => acc + s"${order._2} ${order._1} "
+                  //         )
 
-                      else
-                        msg += "prête !"
+                  //         msg += s"est partiellement prête. Voici : ${partCommand}."
+                  //       // complète
+                  //       else
+                  //         msg += "est prête !"
 
-                      log.debug(orders)
+                  //       log.debug(finishedProds)
+
+                  //       val totalPrice = finishedProds.foldLeft(0.0)(
+                  //         (acc, order) => acc + order._2 * productSvc.getPriceFromString(order._1)
+                  //       )
+                        
+                  //       msg += s" Cela coûte ${totalPrice}.-"
+                  //       session.getCurrentUser match
+                  //         case Some(user) =>
+                  //           if accountSvc.getAccountBalance(user) < totalPrice then
+                  //             msg += " Vous n'avez pas assez d'argent sur votre compte !"
+                  //           else
+                  //             val nouveauSolde = accountSvc.purchase(user, totalPrice)
+                  //             msg += " Merci !"
+
+                  //         case _ => 
+                  //           log.debug("User not logged in  and passing a command")
+                  //           () // user has to be logged in to send a message
+
                       
-                      // TODO obtenir le prix
-                      //val totalPrice = orders.foldLeft(0)(_ + _._2 * productSvc.getPrice(_._1))
+                  //     msgSvc.add("BotTender", StringFrag(msg) , None, Some(expr), Some(replyToId))
+                  //     log.debug(s"Bot reply: $msg")
 
-                      msgSvc.add("BotTender", StringFrag(msg) , None, None, Some(commandId))
-                      sendLastMessages
+                  //     sendLastMessages // nécessaire car dans un future
 
+                  //     Future{()}
+                  //   case Failure(exception) => 
+                  //     // normalement on ne devrait pas avoir d'erreur mais on la log
+                  //     // log.debug(s" error ${exception}")
+                  //     Future{()}
+                  // }
+                  val f = analyzerSvc.buy(session)(expr)
+                  f.transformWith{
+                    case Success(msg) => 
+                      msgSvc.add("BotTender", StringFrag(msg) , None, Some(expr), Some(replyToId))
+                      sendLastMessages // nécessaire car dans un future
                       Future{()}
-                    case Failure(exception) => 
-                      // normalement on ne devrait pas avoir d'erreur
+                    case Failure(exception) =>
+                      // normalement on ne devrait pas avoir d'erreur mais on la log
                       log.debug(s" error ${exception}")
                       Future{()}
                   }
-                    
+                  // msgSvc.add("BotTender", StringFrag(msg) , None, Some(expr), Some(replyToId))
+            // log.debug(s"Bot reply: $msg")
 
-                case _ => val result = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
-                  val replyToId = msgSvc.add(session.getCurrentUser.get, StringFrag(message) , Some(username), None)
-                  msgSvc.add("BotTender", StringFrag(result) , None, Some(expr), Some(replyToId))
-                  log.debug(s"Bot reply: $result")
+                  // sendLastMessages // nécessaire car dans un future
+                case _ => 
+                  val response = analyzerSvc.reply(session)(expr)// NE MODIFE PAS LA SESSION si c'est un je suis _xy
+                  msgSvc.add("BotTender", StringFrag(response) , None, Some(expr), Some(replyToId))
+                  log.debug(s"Bot reply: $response")
             catch
               case e: UnexpectedTokenException => 
                 return ujson.Obj("success" -> false, "err" -> e.getMessage) // to avoid sending success message

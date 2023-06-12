@@ -5,6 +5,7 @@ trait ProductService:
   type ProductName = String
 
   def getPrice(product: ProductName, brand: BrandName): Double
+  def getPriceFromString(productBrand: String): Double
   def getDefaultBrand(product: ProductName): BrandName
 
 class ProductImpl extends ProductService:
@@ -19,6 +20,9 @@ class ProductImpl extends ProductService:
         case "tenebreuse" => 4.0
 
       
+  def getPriceFromString(productBrand: String): Double =
+    val split = productBrand.split(" ")
+    getPrice(split(0), split(1))
     
   def getDefaultBrand(product: ProductName): BrandName = 
     product match

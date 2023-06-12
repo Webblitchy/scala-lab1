@@ -19,7 +19,7 @@ object MainFuture extends cask.Main:
   val allRoutes = Seq(
       StaticRoutes(),
       UsersRoutes(accountSvc, sessionSvc),
-      MessagesRoutes(tokenizerSvc, analyzerSvc, msgSvc, accountSvc, sessionSvc/*, currentOrders*/),
+      MessagesRoutes(tokenizerSvc, analyzerSvc, msgSvc, accountSvc, sessionSvc, productSvc),
   )
 
   override def port: Int = 8980
