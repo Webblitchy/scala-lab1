@@ -129,7 +129,6 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                         // if successful, increment the number of finished product
                         case Some(prodName) => 
                           orders.updateWith(prodName)(incrOption)
-                          orders.addOne(prodName,1)
                     }
 
 
@@ -142,8 +141,10 @@ class MessagesRoutes(tokenizerSvc: TokenizerService,
                         case Success(value) => createProdFuture(Some(prodName))
                       }
                       if !lastInBrand then
+                        // TODO: faire un flatmap pour préparer le prochain produit que quand le précédent est fini
                         makeSameProduct(currentNb+1, totalNb, prodName,cmd, newFut +: futures) // prépare le prochain produit après le précédent
                       else
+                        // TODO : on peut ajouter que le dernier future (car on attend que sur lui)
                         newFut +: futures // retourne la liste des futurs
 
                     val prodOfOneBrand = makeSameProduct(1, brandInCommand._1, brandInCommand._2,brandInCommand._3, List())
